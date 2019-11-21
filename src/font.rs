@@ -22,11 +22,17 @@ pub struct Header {
     pub smushmode: SmushMode,
 }
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq)]
+pub struct Character {
+    pub art: Vec<String>,
+    pub character: char,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Font {
     header: Header,
     comment: String,
-    characters: HashMap<char, Vec<String>>,
+    characters: HashMap<char, Character>,
 }
 
 fn delimited_i32(input: &str) -> IResult<&str, i32> {
@@ -134,7 +140,11 @@ pub fn parse_font(input: &str) -> IResult<&str, Font> {
 
     // standard ascii
     for (i, c) in (32u8..127).map(|i| i as char).enumerate() {
-        characters.insert(c, required_characters[i].clone());
+        let character = Character {
+            character: c,
+            art: required_characters[i].clone(),
+        };
+        characters.insert(c, character);
     }
 
     // additional required (German) characters
@@ -143,14 +153,22 @@ pub fn parse_font(input: &str) -> IResult<&str, Font> {
         .map(|i| *i as char)
         .enumerate()
     {
-        characters.insert(c, required_characters[i].clone());
+        let character = Character {
+            character: c,
+            art: required_characters[i].clone(),
+        };
+        characters.insert(c, character);
     }
     // what's left is additional characters
     let (input, additional_characters) = all_consuming(many0(parse_additional_character))(input)?;
 
     //println!("Additional characters: {:#?}", additional_characters);
 
-    for ((c, _comment), character) in additional_characters {
+    for ((c, _comment), art) in additional_characters {
+        let character = Character {
+            character: c,
+            art,
+        };
         characters.insert(c, character);
     }
 
@@ -175,7 +193,7 @@ fn parse_font_example() {
             .iter()
             .map(|s| s.to_string())
             .collect();
-        assert_eq!(font.characters.get(&'a').unwrap(), &lowercase_a);
+        assert_eq!(font.characters.get(&'a').unwrap().art, lowercase_a);
         let uppercase_a: Vec<_> = [
             r"    _   ",
             r"   /_\  ",
@@ -186,7 +204,7 @@ fn parse_font_example() {
         .iter()
         .map(|s| s.to_string())
         .collect();
-        assert_eq!(font.characters.get(&'A').unwrap(), &uppercase_a);
+        assert_eq!(font.characters.get(&'A').unwrap().art, uppercase_a);
     }
 }
 
