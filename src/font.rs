@@ -1,4 +1,4 @@
-use bitflags;
+use crate::settings::SmushMode;
 use nom::{
     branch::alt,
     bytes::complete::{tag, take_while},
@@ -11,50 +11,15 @@ use nom::{
 use std::collections::HashMap;
 use std::str::FromStr;
 
-bitflags! {
-    pub struct SmushMode: u32 {
-        // Horizontal smush rules
-        const EQUAL = 1;
-        const LOWLINE = 2;
-        const HIERARCHY = 4;
-        const PAIR = 8;
-        const BIGX = 16;
-        const HARDBLANK = 32;
-        const KERN = 64;
-        const SMUSH = 128; // Overrides KERN
-        // Vertical smush rules
-        const VERT_EQUAL = 256;
-        const VERT_LOWLINE = 512;
-        const VERT_HIERARCHY = 1024;
-        const VERT_PAIR = 2048;
-        const VERT_SUPER_SMUSH = 4096;
-        const VERT_FIT = 8192;
-        const VERT_SMUSH = 16384; // Overrides VERT_FIT
-        const OLD_LAYOUT_MASK = Self::EQUAL.bits | Self::LOWLINE.bits | Self::HIERARCHY.bits | Self::PAIR.bits | Self::BIGX.bits;
-    }
-}
-
-fn decode_old_layout(smush: i32) -> u32 {
-    if smush < 0 {
-        0
-    } else if smush == 0 {
-        SmushMode::KERN.bits
-    } else {
-        (SmushMode::OLD_LAYOUT_MASK.bits & smush as u32) | SmushMode::SMUSH.bits
-    }
-}
-
 #[derive(Debug, PartialEq, Default)]
 pub struct Header {
     pub hardblank: char,
     pub charheight: u32,
     pub baseline: u32,
     pub maxlength: u32,
-    pub smush: i32,
     pub commentlines: u32,
     pub right2left: bool,
-    pub smush2: u32,
-    pub codetags: u32,
+    pub smushmode: SmushMode,
 }
 
 #[derive(Debug, PartialEq, Default)]
@@ -88,7 +53,7 @@ pub fn headerline(input: &str) -> IResult<&str, Header> {
             commentlines,
             right2left,
             smush2,
-            codetags,
+            _codetags,
         ),
     ) = tuple((
         alt((tag("tlf2a"), tag("flf2a"))),
@@ -103,7 +68,11 @@ pub fn headerline(input: &str) -> IResult<&str, Header> {
         opt(delimited_u32),
     ))(input)?;
 
-    let smush2 = smush2.unwrap_or_else(|| decode_old_layout(smush));
+    let smushmode = if let Some(sm) = smush2 {
+        SmushMode::from_bits_truncate(sm)
+    } else {
+        SmushMode::from_old_layout(smush)
+    };
 
     Ok((
         input,
@@ -112,11 +81,9 @@ pub fn headerline(input: &str) -> IResult<&str, Header> {
             charheight,
             baseline,
             maxlength,
-            smush,
             commentlines,
             right2left: right2left.unwrap_or(0) != 0,
-            smush2,
-            codetags: codetags.unwrap_or(0),
+            smushmode,
         },
     ))
 }
@@ -236,11 +203,9 @@ fn parse_header_toilet() {
                 charheight: 3,
                 baseline: 3,
                 maxlength: 8,
-                smush: -1,
                 commentlines: 22,
                 right2left: false,
-                smush2: 0,
-                codetags: 0,
+                smushmode: SmushMode::empty(),
             }
         ))
     );
@@ -260,11 +225,9 @@ fn parse_header_standard() {
                 charheight: 6,
                 baseline: 5,
                 maxlength: 16,
-                smush: 15,
                 commentlines: 11,
                 right2left: false,
-                smush2: 24463,
-                codetags: 229,
+                smushmode: 24463.into(),
             }
         ))
     );
@@ -283,11 +246,9 @@ fn parse_header_basic() {
                 charheight: 8,
                 baseline: 8,
                 maxlength: 17,
-                smush: -1,
                 commentlines: 2,
                 right2left: false,
-                smush2: 0,
-                codetags: 0
+                smushmode: SmushMode::empty(),
             }
         ))
     );
@@ -306,11 +267,9 @@ fn parse_header_broadway() {
                 charheight: 11,
                 baseline: 11,
                 maxlength: 36,
-                smush: 2,
                 commentlines: 29,
                 right2left: false,
-                smush2: 2 | SmushMode::SMUSH.bits,
-                codetags: 0
+                smushmode: 130.into(),
             }
         ))
     );
