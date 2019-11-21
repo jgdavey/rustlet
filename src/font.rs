@@ -35,6 +35,17 @@ pub struct Font {
     characters: HashMap<char, Character>,
 }
 
+impl Font {
+    pub fn get_character(&self, ch: &char) -> &Character {
+        self.characters
+            .get(ch)
+            .unwrap_or_else(|| self.characters.get(&'?').unwrap())
+    }
+    pub fn height(&self) -> usize {
+        self.header.charheight as usize
+    }
+}
+
 fn delimited_i32(input: &str) -> IResult<&str, i32> {
     map_res(
         delimited(space0, recognize(pair(opt(tag("-")), digit1)), space0),
@@ -46,7 +57,7 @@ fn delimited_u32(input: &str) -> IResult<&str, u32> {
     map_res(delimited(space0, digit1, space0), FromStr::from_str)(input)
 }
 
-pub fn headerline(input: &str) -> IResult<&str, Header> {
+fn headerline(input: &str) -> IResult<&str, Header> {
     let (
         input,
         (
@@ -123,7 +134,7 @@ fn trim_line(line: &str) -> String {
     }
 }
 
-pub fn parse_font(input: &str) -> IResult<&str, Font> {
+fn parse_font(input: &str) -> IResult<&str, Font> {
     let (input, header) = terminated(headerline, line_ending)(input)?;
     let comlines = header.commentlines as usize;
     let height = header.charheight as usize;
@@ -165,10 +176,7 @@ pub fn parse_font(input: &str) -> IResult<&str, Font> {
     //println!("Additional characters: {:#?}", additional_characters);
 
     for ((c, _comment), art) in additional_characters {
-        let character = Character {
-            character: c,
-            art,
-        };
+        let character = Character { character: c, art };
         characters.insert(c, character);
     }
 
@@ -180,6 +188,14 @@ pub fn parse_font(input: &str) -> IResult<&str, Font> {
             characters,
         },
     ))
+}
+
+pub fn read_font(font_data: &str) -> Option<Font> {
+    if let Ok((_, font)) = parse_font(font_data) {
+        Some(font)
+    } else {
+        None
+    }
 }
 
 #[test]
