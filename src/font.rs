@@ -44,6 +44,9 @@ impl Font {
     pub fn height(&self) -> usize {
         self.header.charheight as usize
     }
+    pub fn is_hardblank(&self, ch: char) -> bool {
+        ch == self.header.hardblank
+    }
 }
 
 fn delimited_i32(input: &str) -> IResult<&str, i32> {

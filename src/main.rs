@@ -14,7 +14,13 @@ fn main() {
     let glyphs: Vec<_> = message.chars().map(|c| font.get_character(&c)).collect();
     for line in 0..font.height() {
         for glyph in &glyphs {
-            print!("{}", glyph.art[line]);
+            for ch in glyph.art[line].chars() {
+                if font.is_hardblank(ch) {
+                    print!("{}", ' ');
+                } else {
+                    print!("{}", ch);
+                }
+            }
         }
         println!();
     }
