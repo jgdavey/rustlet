@@ -4,6 +4,7 @@ extern crate nom;
 
 mod font;
 mod settings;
+mod text;
 use font::read_font;
 
 fn main() {

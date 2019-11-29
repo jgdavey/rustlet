@@ -11,6 +11,8 @@ use nom::{
 use std::collections::HashMap;
 use std::str::FromStr;
 
+use crate::text::Text;
+
 #[derive(Debug, PartialEq, Default)]
 pub struct Header {
     pub hardblank: char,
@@ -23,20 +25,14 @@ pub struct Header {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Character {
-    pub art: Vec<String>,
-    pub character: char,
-}
-
-#[derive(Debug, PartialEq)]
 pub struct Font {
     header: Header,
     comment: String,
-    characters: HashMap<char, Character>,
+    characters: HashMap<char, Text>,
 }
 
 impl Font {
-    pub fn get_character(&self, ch: &char) -> &Character {
+    pub fn get_character(&self, ch: &char) -> &Text {
         self.characters
             .get(ch)
             .unwrap_or_else(|| self.characters.get(&'?').unwrap())
@@ -154,8 +150,8 @@ fn parse_font(input: &str) -> IResult<&str, Font> {
 
     // standard ascii
     for (i, c) in (32u8..127).map(|i| i as char).enumerate() {
-        let character = Character {
-            character: c,
+        let character = Text {
+            text: c.to_string(),
             art: required_characters[i].clone(),
         };
         characters.insert(c, character);
@@ -167,8 +163,8 @@ fn parse_font(input: &str) -> IResult<&str, Font> {
         .map(|i| *i as char)
         .enumerate()
     {
-        let character = Character {
-            character: c,
+        let character = Text {
+            text: c.to_string(),
             art: required_characters[i].clone(),
         };
         characters.insert(c, character);
@@ -179,7 +175,7 @@ fn parse_font(input: &str) -> IResult<&str, Font> {
     //println!("Additional characters: {:#?}", additional_characters);
 
     for ((c, _comment), art) in additional_characters {
-        let character = Character { character: c, art };
+        let character = Text { text: c.to_string(), art };
         characters.insert(c, character);
     }
 
