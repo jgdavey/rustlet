@@ -48,3 +48,14 @@ impl SmushMode {
         }
     }
 }
+
+#[derive(Debug, PartialEq, Default)]
+pub struct Settings {
+    pub hardblank: char,
+    pub charheight: u32,
+    pub baseline: u32,
+    pub maxlength: u32,
+    pub commentlines: u32,
+    pub right2left: bool,
+    pub smushmode: SmushMode,
+}

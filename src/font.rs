@@ -1,4 +1,3 @@
-use crate::settings::SmushMode;
 use nom::{
     branch::alt,
     bytes::complete::{tag, take_while},
@@ -12,22 +11,12 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use crate::text::Text;
-
-#[derive(Debug, PartialEq, Default)]
-pub struct Header {
-    pub hardblank: char,
-    pub charheight: u32,
-    pub baseline: u32,
-    pub maxlength: u32,
-    pub commentlines: u32,
-    pub right2left: bool,
-    pub smushmode: SmushMode,
-}
+use crate::settings::{Settings, SmushMode};
 
 #[derive(Debug, PartialEq)]
 pub struct Font {
-    header: Header,
-    comment: String,
+    pub settings: Settings,
+    pub comment: String,
     characters: HashMap<char, Text>,
 }
 
@@ -38,10 +27,10 @@ impl Font {
             .unwrap_or_else(|| self.characters.get(&'?').unwrap())
     }
     pub fn height(&self) -> usize {
-        self.header.charheight as usize
+        self.settings.charheight as usize
     }
     pub fn is_hardblank(&self, ch: char) -> bool {
-        ch == self.header.hardblank
+        ch == self.settings.hardblank
     }
 }
 
@@ -56,7 +45,7 @@ fn delimited_u32(input: &str) -> IResult<&str, u32> {
     map_res(delimited(space0, digit1, space0), FromStr::from_str)(input)
 }
 
-fn headerline(input: &str) -> IResult<&str, Header> {
+fn settingsline(input: &str) -> IResult<&str, Settings> {
     let (
         input,
         (
@@ -92,7 +81,7 @@ fn headerline(input: &str) -> IResult<&str, Header> {
 
     Ok((
         input,
-        Header {
+        Settings {
             hardblank,
             charheight,
             baseline,
@@ -120,23 +109,23 @@ fn line(input: &str) -> IResult<&str, &str> {
     terminated(take_while(non_line_ending), line_ending)(input)
 }
 
-fn trim_line(line: &str) -> String {
+fn trim_line(line: &str) -> Vec<char> {
     if line.len() < 2 {
-        String::from("")
+        vec![]
     } else {
         let mut chars: Vec<_> = line.chars().collect();
         let tailchar = chars.pop();
         while chars.last() == tailchar.as_ref() {
             chars.pop();
         }
-        chars.iter().collect()
+        chars
     }
 }
 
 fn parse_font(input: &str) -> IResult<&str, Font> {
-    let (input, header) = terminated(headerline, line_ending)(input)?;
-    let comlines = header.commentlines as usize;
-    let height = header.charheight as usize;
+    let (input, settings) = terminated(settingsline, line_ending)(input)?;
+    let comlines = settings.commentlines as usize;
+    let height = settings.charheight as usize;
     let (input, comment) =
         map(many_m_n(comlines, comlines, line), |lines| lines.join("\n"))(input)?;
     let parse_character = map(many_m_n(height, height, line), |ch| {
@@ -175,14 +164,17 @@ fn parse_font(input: &str) -> IResult<&str, Font> {
     //println!("Additional characters: {:#?}", additional_characters);
 
     for ((c, _comment), art) in additional_characters {
-        let character = Text { text: c.to_string(), art };
+        let character = Text {
+            text: c.to_string(),
+            art,
+        };
         characters.insert(c, character);
     }
 
     Ok((
         input,
         Font {
-            header,
+            settings,
             comment,
             characters,
         },
@@ -224,14 +216,14 @@ fn parse_font_example() {
 }
 
 #[test]
-fn parse_header_toilet() {
-    let header = "tlf2a 3 3 8 -1 22 0 \r\n";
+fn parse_settings_toilet() {
+    let settings = "tlf2a 3 3 8 -1 22 0 \r\n";
 
     assert_eq!(
-        terminated(headerline, line_ending)(header),
+        terminated(settingsline, line_ending)(settings),
         Ok((
             "",
-            Header {
+            Settings {
                 hardblank: '',
                 charheight: 3,
                 baseline: 3,
@@ -245,15 +237,15 @@ fn parse_header_toilet() {
 }
 
 #[test]
-fn parse_header_standard() {
+fn parse_settings_standard() {
     // standard.flf
-    let header = r#"flf2a$ 6 5 16 15 11 0 24463 229"#;
+    let settings = r#"flf2a$ 6 5 16 15 11 0 24463 229"#;
 
     assert_eq!(
-        headerline(header),
+        settingsline(settings),
         Ok((
             "",
-            Header {
+            Settings {
                 hardblank: '$',
                 charheight: 6,
                 baseline: 5,
@@ -267,14 +259,14 @@ fn parse_header_standard() {
 }
 
 #[test]
-fn parse_header_basic() {
-    let header = r#"flf2a$ 8 8 17 -1 2"#;
+fn parse_settings_basic() {
+    let settings = r#"flf2a$ 8 8 17 -1 2"#;
 
     assert_eq!(
-        headerline(header),
+        settingsline(settings),
         Ok((
             "",
-            Header {
+            Settings {
                 hardblank: '$',
                 charheight: 8,
                 baseline: 8,
@@ -288,14 +280,14 @@ fn parse_header_basic() {
 }
 
 #[test]
-fn parse_header_broadway() {
-    let header = r#"flf2a$ 11 11 36 2 29"#;
+fn parse_settings_broadway() {
+    let settings = r#"flf2a$ 11 11 36 2 29"#;
 
     assert_eq!(
-        headerline(header),
+        settingsline(settings),
         Ok((
             "",
-            Header {
+            Settings {
                 hardblank: '$',
                 charheight: 11,
                 baseline: 11,
