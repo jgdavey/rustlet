@@ -10,9 +10,9 @@ pub struct Text {
     pub text: String,
 }
 
-// Given 2 characters, attempts to smush them into 1, according to
-// smushmode.  Returns smushed character or '\0' if no smushing can be
-// done.
+/// Given 2 characters, attempts to smush them into 1, according to
+/// smushmode.  Returns smushed character or '\0' if no smushing can be
+/// done.
 
 // smushmode values are sum of following (all values smush blanks):
 // 1: Smush equal chars (not hardblanks)
@@ -126,8 +126,15 @@ impl Text {
 
         // For each row of the artwork...
         (0..self.height()).map(|i| {
-            let left = &self.art[i];
-            let right = &other.art[i];
+            let left;
+            let right;
+            if settings.right2left {
+                left = &other.art[i];
+                right = &self.art[i];
+            } else {
+                left = &self.art[i];
+                right = &other.art[i];
+            }
             let l_blanks = left.iter().rev().take_while(|&c| *c == ' ').count();
             let r_blanks = right.iter().take_while(|&c| *c == ' ').count();
             let mut rowsmush = l_blanks + r_blanks;
@@ -144,10 +151,18 @@ impl Text {
 
     pub fn append(&mut self, other: &Text, settings: &Settings) -> Result<(), String> {
         let smushamount = self.calculate_smush_amount(other, settings);
-        let mut result = self.art.clone();
+        let mut result = if settings.right2left {
+            other.art.clone()
+        } else {
+            self.art.clone()
+        };
         for i in 0..self.height() {
-            let left = &self.art[i];
-            let right = &other.art[i];
+            let right = if settings.right2left {
+                &self.art[i]
+            } else {
+                &other.art[i]
+            };
+
             for k in 0..smushamount {
                 let column = if smushamount > self.width() {
                     0
@@ -156,13 +171,13 @@ impl Text {
                 };
                 let rch = right[k];
 
-                if column >= left.len() {
+                if column >= result[i].len() {
                     if rch != ' ' {
                         result[i].push(rch);
                     }
                     continue;
                 }
-                let lch = left[column];
+                let lch = result[i][column];
 
                 if let Some(smushed) = smushem(lch, rch, settings) {
                     result[i][column] = smushed;
