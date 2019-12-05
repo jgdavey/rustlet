@@ -1,4 +1,5 @@
 use crate::settings::{Settings, SmushMode};
+use crate::font::Font;
 use std::fmt;
 
 type Art = Vec<Vec<char>>;
@@ -230,4 +231,53 @@ impl fmt::Display for Text {
         }
         Ok(())
     }
+}
+
+/// Given a message, font, settings, and maximum width, formats the
+/// message using the font. Returns "art lines", that is, a
+/// Vec<String> that, when printed sequentially, will resemble "lines"
+/// of text. Each String can be multiple lines.
+pub fn art_lines(message: &str, font: &Font, settings: &Settings, max_width: usize) -> Vec<String> {
+    let space = font.get_character(&' ');
+    let words: Vec<Text> = message
+        .split_whitespace()
+        .flat_map(|word| {
+            let mut result = vec![];
+            let mut line = Text::empty_of_height(font.height());
+            for ch in word.chars().map(|c| font.get_character(&c)) {
+                let new_width = line.width() + ch.width();
+                if !line.is_empty() && new_width > max_width {
+                    result.push(line);
+                    line = Text::empty_of_height(font.height());
+                }
+                line = line.append(&ch, settings);
+            }
+            if !line.is_empty() {
+                result.push(line);
+            }
+            result.into_iter()
+        })
+        .collect();
+
+    let mut result = vec![];
+    let mut line = Text::empty_of_height(font.height());
+
+    for word in words {
+        let new_width = line.width() + word.width() + space.width();
+        if !line.is_empty() {
+            if new_width > max_width {
+                result.push(line);
+                line = Text::empty_of_height(font.height());
+            } else {
+                line = line.append(&space, settings);
+            }
+        }
+        line = line.append(&word, settings);
+    }
+
+    if !line.is_empty() {
+        result.push(line);
+    }
+
+    result.iter().map(|art_line| art_line.to_string().replace(font.hardblank(), " ")).collect()
 }
