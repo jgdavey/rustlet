@@ -26,11 +26,11 @@ impl Font {
             .get(ch)
             .unwrap_or_else(|| self.characters.get(&'?').unwrap())
     }
-    pub fn height(&self) -> usize {
-        self.settings.charheight as usize
+    pub fn height(&self) -> u32 {
+        self.settings.charheight
     }
-    pub fn is_hardblank(&self, ch: char) -> bool {
-        ch == self.settings.hardblank
+    pub fn hardblank(&self) -> char {
+        self.settings.hardblank
     }
 }
 
@@ -196,12 +196,18 @@ fn parse_font_example() {
     assert!(res.is_ok());
     if let Ok((_, font)) = res {
         assert!(font.comment.contains("Small by Glenn Chappell"));
-        let lowercase_a: Vec<_> = [r"       ", r"  __ _ ", r" / _` |", r" \__,_|", r"       "]
+        let lowercase_a: Vec<Vec<_>> = [
+            r"       ",
+            r"  __ _ ",
+            r" / _` |",
+            r" \__,_|",
+            r"       ",
+        ]
             .iter()
-            .map(|s| s.to_string())
+            .map(|s| s.chars().collect())
             .collect();
         assert_eq!(font.characters.get(&'a').unwrap().art, lowercase_a);
-        let uppercase_a: Vec<_> = [
+        let uppercase_a: Vec<Vec<_>> = [
             r"    _   ",
             r"   /_\  ",
             r"  / _ \ ",
@@ -209,7 +215,7 @@ fn parse_font_example() {
             r"        ",
         ]
         .iter()
-        .map(|s| s.to_string())
+        .map(|s| s.chars().collect())
         .collect();
         assert_eq!(font.characters.get(&'A').unwrap().art, uppercase_a);
     }

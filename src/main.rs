@@ -16,12 +16,12 @@ fn art_lines(message: &str, font: &Font, settings: &Settings, max_width: usize) 
         .split_whitespace()
         .flat_map(|word| {
             let mut result = vec![];
-            let mut line = Text::empty_of_height(font.settings.charheight);
+            let mut line = Text::empty_of_height(font.height());
             for ch in word.chars().map(|c| font.get_character(&c)) {
                 let new_width = line.width() + ch.width();
                 if !line.is_empty() && new_width > max_width {
                     result.push(line);
-                    line = Text::empty_of_height(font.settings.charheight);
+                    line = Text::empty_of_height(font.height());
                 }
                 line = line.append(&ch, settings);
             }
@@ -33,14 +33,14 @@ fn art_lines(message: &str, font: &Font, settings: &Settings, max_width: usize) 
         .collect();
 
     let mut result = vec![];
-    let mut line = Text::empty_of_height(font.settings.charheight);
+    let mut line = Text::empty_of_height(font.height());
 
     for word in words {
         let new_width = line.width() + word.width() + space.width();
         if !line.is_empty() {
             if new_width > max_width {
                 result.push(line);
-                line = Text::empty_of_height(font.settings.charheight);
+                line = Text::empty_of_height(font.height());
             } else {
                 line = line.append(&space, settings);
             }
@@ -65,7 +65,7 @@ fn main() {
     let art_lines = art_lines(&message, &font, &font.settings, max_size);
 
     for art_line in art_lines {
-        let block = art_line.to_string().replace(font.settings.hardblank, " ");
+        let block = art_line.to_string().replace(font.hardblank(), " ");
         print!("{}", block);
     }
 }
