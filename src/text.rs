@@ -245,12 +245,13 @@ pub fn art_lines(message: &str, font: &Font, settings: &Settings, max_width: usi
             let mut result = vec![];
             let mut line = Text::empty_of_height(font.height());
             for ch in word.chars().map(|c| font.get_character(&c)) {
-                let new_width = line.width() + ch.width();
-                if !line.is_empty() && new_width > max_width {
+                let new_line = line.append(&ch, settings);
+                if !line.is_empty() && new_line.width() > max_width {
                     result.push(line);
-                    line = Text::empty_of_height(font.height());
+                    line = Text::empty_of_height(font.height()).append(&ch, settings);
+                } else {
+                    line = new_line
                 }
-                line = line.append(&ch, settings);
             }
             if !line.is_empty() {
                 result.push(line);
@@ -263,16 +264,17 @@ pub fn art_lines(message: &str, font: &Font, settings: &Settings, max_width: usi
     let mut line = Text::empty_of_height(font.height());
 
     for word in words {
-        let new_width = line.width() + word.width() + space.width();
-        if !line.is_empty() {
-            if new_width > max_width {
+        if line.is_empty() {
+            line = line.append(&word, settings);
+        } else {
+            let new_line = line.append(&space, settings).append(&word, settings);
+            if new_line.width() > max_width {
                 result.push(line);
-                line = Text::empty_of_height(font.height());
+                line = Text::empty_of_height(font.height()).append(&word, settings);
             } else {
-                line = line.append(&space, settings);
+                line = new_line;
             }
         }
-        line = line.append(&word, settings);
     }
 
     if !line.is_empty() {
