@@ -1,4 +1,5 @@
 use crate::settings::{Settings, SmushMode};
+use std::fmt;
 
 type Art = Vec<Vec<char>>;
 
@@ -153,27 +154,30 @@ impl Text {
             .unwrap_or(0)
     }
 
-    pub fn append(&mut self, other: &Text, settings: &Settings) -> Result<(), String> {
+    pub fn append(&self, other: &Text, settings: &Settings) -> Text {
         let smushamount = self.calculate_smush_amount(other, settings);
-        let mut result = if settings.right2left {
-            other.art.clone()
+        let left;
+        let right;
+        if settings.right2left {
+            left = other;
+            right = self;
         } else {
-            self.art.clone()
-        };
-        for i in 0..self.height() {
-            let right = if settings.right2left {
-                &self.art[i]
-            } else {
-                &other.art[i]
-            };
+            left = self;
+            right = other;
+        }
 
+        let mut result = left.art.clone();
+        let mut text = left.text.clone();
+        text.push_str(right.text.as_str());
+
+        for i in 0..self.height() {
             for k in 0..smushamount {
                 let column = if smushamount > self.width() {
                     0
                 } else {
                     self.width() - smushamount + k
                 };
-                let rch = right[k];
+                let rch = right.art[i][k];
 
                 if column >= result[i].len() {
                     if rch != ' ' {
@@ -187,11 +191,12 @@ impl Text {
                     result[i][column] = smushed;
                 }
             }
-            result[i].extend_from_slice(&right[smushamount..]);
+            result[i].extend_from_slice(&right.art[i][smushamount..]);
         }
-        self.art = result;
-        self.text.push_str(other.text.as_str());
-        Ok(())
+        Text {
+            art: result,
+            text: text,
+        }
     }
 
     pub fn width(&self) -> usize {
@@ -202,11 +207,27 @@ impl Text {
         self.art.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.art.is_empty() || self.art[0].is_empty()
+    }
+
     pub fn empty_of_height(height: u32) -> Self {
         let art: Art = (0..height).map(|_| vec![]).collect();
         Text {
             text: String::from(""),
             art,
         }
+    }
+}
+
+impl fmt::Display for Text {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for line in &self.art {
+            for &ch in line.iter() {
+                write!(f, "{}", ch)?;
+            }
+            writeln!(f)?;
+        }
+        Ok(())
     }
 }
