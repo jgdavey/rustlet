@@ -24,54 +24,56 @@ pub struct Text {
 // 32: hardblank + hardblank -> hardblank
 fn smushem(lch: char, rch: char, settings: &Settings) -> Option<char> {
     if lch == ' ' {
-        return Some(rch)
+        return Some(rch);
     }
     if rch == ' ' {
-        return Some(lch)
+        return Some(lch);
     }
 
     if !settings.smushmode.intersects(SmushMode::SMUSH) {
-        return None
+        return None;
     }
 
     // Nothing set below 64: this is smushing by universal overlapping
-    if !settings.smushmode.intersects(SmushMode::from_bits_truncate(63)) {
-
+    if !settings
+        .smushmode
+        .intersects(SmushMode::from_bits_truncate(63))
+    {
         // ensure overlapping preference to visible chars (spaces handled already)
         if lch == settings.hardblank {
-            return Some(rch)
+            return Some(rch);
         }
         if rch == settings.hardblank {
-            return Some(lch)
+            return Some(lch);
         }
 
         // ensure dominant char overlaps, depending on right-to-left parameter
         if settings.right2left {
-            return Some(lch)
+            return Some(lch);
         }
-        return Some(rch)
+        return Some(rch);
     }
 
     if settings.smushmode.intersects(SmushMode::HARDBLANK) {
         if lch == settings.hardblank && rch == settings.hardblank {
-            return Some(settings.hardblank)
+            return Some(settings.hardblank);
         }
     } else if lch == settings.hardblank || rch == settings.hardblank {
-        return None
+        return None;
     }
 
-    if settings.smushmode.intersects(SmushMode::EQUAL)  {
+    if settings.smushmode.intersects(SmushMode::EQUAL) {
         if lch == rch {
-            return Some(lch)
+            return Some(lch);
         }
     }
 
     if settings.smushmode.intersects(SmushMode::LOWLINE) {
         if lch == '_' && "|/\\[]{}()<>".contains(rch) {
-            return Some(rch)
+            return Some(rch);
         }
         if rch == '_' && "|/\\[]{}()<>".contains(lch) {
-            return Some(lch)
+            return Some(lch);
         }
     }
 
@@ -79,15 +81,15 @@ fn smushem(lch: char, rch: char, settings: &Settings) -> Option<char> {
         let hierarchy = vec!["|", "/\\", "[]", "{}", "()", "<>"]; // low -> high precedence
         let is_in_hierarchy = |low: char, high: char, i| {
             let first: &str = hierarchy[i];
-            first.contains(low) && (&hierarchy[i+1..]).join("").contains(high)
+            first.contains(low) && (&hierarchy[i + 1..]).join("").contains(high)
         };
 
         for i in 0..hierarchy.len() {
             if is_in_hierarchy(lch, rch, i) {
-                return Some(rch)
+                return Some(rch);
             }
             if is_in_hierarchy(rch, lch, i) {
-                return Some(lch)
+                return Some(lch);
             }
         }
     }
@@ -97,56 +99,58 @@ fn smushem(lch: char, rch: char, settings: &Settings) -> Option<char> {
         for pair in pairs {
             let [open, close] = pair;
             if (rch == open && lch == close) || (rch == close && lch == open) {
-                return Some('|')
+                return Some('|');
             }
         }
     }
 
     if settings.smushmode.intersects(SmushMode::BIGX) {
         if lch == '/' && rch == '\\' {
-            return Some('|')
+            return Some('|');
         }
         if lch == '\\' && rch == '/' {
-            return Some('Y')
+            return Some('Y');
         }
         if lch == '>' && rch == '<' {
-            return Some('X')
+            return Some('X');
         }
     }
     None
 }
 
-
 impl Text {
     fn calculate_smush_amount(&self, other: &Text, settings: &Settings) -> usize {
         let s = settings.smushmode;
         if !s.intersects(SmushMode::SMUSH) && !s.intersects(SmushMode::KERN) {
-            return 0
+            return 0;
         }
 
         // For each row of the artwork...
-        (0..self.height()).map(|i| {
-            let left;
-            let right;
-            if settings.right2left {
-                left = &other.art[i];
-                right = &self.art[i];
-            } else {
-                left = &self.art[i];
-                right = &other.art[i];
-            }
-            let l_blanks = left.iter().rev().take_while(|&c| *c == ' ').count();
-            let r_blanks = right.iter().take_while(|&c| *c == ' ').count();
-            let mut rowsmush = l_blanks + r_blanks;
-            if let Some(&lch) = left.iter().rev().skip_while(|&c| *c == ' ').next() {
-                if let Some(&rch) = right.iter().skip_while(|&c| *c == ' ').next() {
-                    if let Some(_ch) = smushem(lch, rch, settings) {
-                        rowsmush += 1
+        (0..self.height())
+            .map(|i| {
+                let left;
+                let right;
+                if settings.right2left {
+                    left = &other.art[i];
+                    right = &self.art[i];
+                } else {
+                    left = &self.art[i];
+                    right = &other.art[i];
+                }
+                let l_blanks = left.iter().rev().take_while(|&c| *c == ' ').count();
+                let r_blanks = right.iter().take_while(|&c| *c == ' ').count();
+                let mut rowsmush = l_blanks + r_blanks;
+                if let Some(&lch) = left.iter().rev().skip_while(|&c| *c == ' ').next() {
+                    if let Some(&rch) = right.iter().skip_while(|&c| *c == ' ').next() {
+                        if let Some(_ch) = smushem(lch, rch, settings) {
+                            rowsmush += 1
+                        }
                     }
                 }
-            }
-            rowsmush
-        }).min().unwrap_or(0)
+                rowsmush
+            })
+            .min()
+            .unwrap_or(0)
     }
 
     pub fn append(&mut self, other: &Text, settings: &Settings) -> Result<(), String> {

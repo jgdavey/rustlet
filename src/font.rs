@@ -10,8 +10,8 @@ use nom::{
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use crate::text::Text;
 use crate::settings::{Settings, SmushMode};
+use crate::text::Text;
 
 #[derive(Debug, PartialEq)]
 pub struct Font {
