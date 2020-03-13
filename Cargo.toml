@@ -9,4 +9,4 @@ edition = "2018"
 [dependencies]
 nom = "5"
 bitflags = "^1.2"
-clap = "*"
+clap = "2"
