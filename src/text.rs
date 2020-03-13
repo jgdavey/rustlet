@@ -1,5 +1,5 @@
-use crate::settings::{Settings, SmushMode};
 use crate::font::Font;
+use crate::settings::{Settings, SmushMode};
 use std::fmt;
 
 type Art = Vec<Vec<char>>;
@@ -281,5 +281,8 @@ pub fn art_lines(message: &str, font: &Font, settings: &Settings, max_width: usi
         result.push(line);
     }
 
-    result.iter().map(|art_line| art_line.to_string().replace(font.hardblank(), " ")).collect()
+    result
+        .iter()
+        .map(|art_line| art_line.to_string().replace(font.hardblank(), " "))
+        .collect()
 }

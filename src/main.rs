@@ -17,13 +17,15 @@ fn main() {
     let app = App::new("rustlet")
         .version(crate_version!())
         .about("ASCII art from messages")
-        .arg(Arg::with_name("width")
-             .short("w")
-             .long("width")
-             .value_name("WIDTH")
-             .default_value("72")
-             .help("Sets the maximum width for a line")
-             .takes_value(true))
+        .arg(
+            Arg::with_name("width")
+                .short("w")
+                .long("width")
+                .value_name("WIDTH")
+                .default_value("72")
+                .help("Sets the maximum width for a line")
+                .takes_value(true),
+        )
         // .arg(Arg::with_name("font")
         //      .short("f")
         //      .long("font")
@@ -31,8 +33,7 @@ fn main() {
         //      .default_value("standard")
         //      .help("Name of font file to use")
         //      .takes_value(true))
-        .arg(Arg::with_name("messages")
-             .multiple(true));
+        .arg(Arg::with_name("messages").multiple(true));
 
     let matches = app.get_matches();
 

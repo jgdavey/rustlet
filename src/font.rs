@@ -196,13 +196,7 @@ fn parse_font_example() {
     assert!(res.is_ok());
     if let Ok((_, font)) = res {
         assert!(font.comment.contains("Small by Glenn Chappell"));
-        let lowercase_a: Vec<Vec<_>> = [
-            r"       ",
-            r"  __ _ ",
-            r" / _` |",
-            r" \__,_|",
-            r"       ",
-        ]
+        let lowercase_a: Vec<Vec<_>> = [r"       ", r"  __ _ ", r" / _` |", r" \__,_|", r"       "]
             .iter()
             .map(|s| s.chars().collect())
             .collect();
