@@ -1,7 +1,7 @@
 use bitflags;
-
 bitflags! {
-    #[derive(Default)]
+    #[repr(transparent)]
+    #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct SmushMode: u32 {
         // Horizontal smush rules
         const EQUAL = 1;
@@ -20,7 +20,7 @@ bitflags! {
         const VERT_SUPER_SMUSH = 4096;
         const VERT_FIT = 8192;
         const VERT_SMUSH = 16384; // Overrides VERT_FIT
-        const OLD_LAYOUT_MASK = Self::EQUAL.bits | Self::LOWLINE.bits | Self::HIERARCHY.bits | Self::PAIR.bits | Self::BIGX.bits;
+        const OLD_LAYOUT_MASK = Self::EQUAL.bits() | Self::LOWLINE.bits() | Self::HIERARCHY.bits() | Self::PAIR.bits() | Self::BIGX.bits();
     }
 }
 
