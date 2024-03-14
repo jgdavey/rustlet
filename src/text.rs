@@ -64,10 +64,8 @@ fn smushem(lch: char, rch: char, settings: &Settings) -> Option<char> {
         return None;
     }
 
-    if settings.smushmode.intersects(SmushMode::EQUAL) {
-        if lch == rch {
-            return Some(lch);
-        }
+    if settings.smushmode.intersects(SmushMode::EQUAL) && lch == rch {
+        return Some(lch);
     }
 
     if settings.smushmode.intersects(SmushMode::LOWLINE) {
@@ -80,10 +78,10 @@ fn smushem(lch: char, rch: char, settings: &Settings) -> Option<char> {
     }
 
     if settings.smushmode.intersects(SmushMode::HIERARCHY) {
-        let hierarchy = vec!["|", "/\\", "[]", "{}", "()", "<>"]; // low -> high precedence
+        let hierarchy = ["|", "/\\", "[]", "{}", "()", "<>"]; // low -> high precedence
         let is_in_hierarchy = |low: char, high: char, i| {
             let first: &str = hierarchy[i];
-            first.contains(low) && (&hierarchy[i + 1..]).join("").contains(high)
+            first.contains(low) && hierarchy[i + 1..].join("").contains(high)
         };
 
         for i in 0..hierarchy.len() {
@@ -196,7 +194,7 @@ impl Text {
         }
         Text {
             art: result,
-            text: text,
+            text,
         }
     }
 
@@ -245,10 +243,10 @@ pub fn art_lines(message: &str, font: &Font, settings: &Settings, max_width: usi
             let mut result = vec![];
             let mut line = Text::empty_of_height(font.height());
             for ch in word.chars().map(|c| font.get_character(&c)) {
-                let new_line = line.append(&ch, settings);
+                let new_line = line.append(ch, settings);
                 if !line.is_empty() && new_line.width() > max_width {
                     result.push(line);
-                    line = Text::empty_of_height(font.height()).append(&ch, settings);
+                    line = Text::empty_of_height(font.height()).append(ch, settings);
                 } else {
                     line = new_line
                 }
@@ -267,7 +265,7 @@ pub fn art_lines(message: &str, font: &Font, settings: &Settings, max_width: usi
         if line.is_empty() {
             line = line.append(&word, settings);
         } else {
-            let new_line = line.append(&space, settings).append(&word, settings);
+            let new_line = line.append(space, settings).append(&word, settings);
             if new_line.width() > max_width {
                 result.push(line);
                 line = Text::empty_of_height(font.height()).append(&word, settings);

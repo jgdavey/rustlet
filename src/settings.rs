@@ -1,4 +1,4 @@
-use bitflags;
+
 bitflags! {
     #[repr(transparent)]
     #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
