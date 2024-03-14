@@ -1,4 +1,3 @@
-
 bitflags! {
     #[repr(transparent)]
     #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -38,13 +37,14 @@ impl From<SmushMode> for u32 {
 
 impl SmushMode {
     pub fn from_old_layout(bits: i32) -> Self {
-        if bits < 0 {
-            SmushMode::empty()
-        } else if bits == 0 {
-            SmushMode::KERN
-        } else {
-            let bits = bits as u32;
-            (SmushMode::OLD_LAYOUT_MASK & SmushMode::from_bits_truncate(bits)) | SmushMode::SMUSH
+        match bits {
+            0 => SmushMode::KERN,
+            b if b < 0 => SmushMode::empty(),
+            _ => {
+                let bits = bits as u32;
+                (SmushMode::OLD_LAYOUT_MASK & SmushMode::from_bits_truncate(bits))
+                    | SmushMode::SMUSH
+            }
         }
     }
 }

@@ -140,8 +140,8 @@ impl Text {
                 let l_blanks = left.iter().rev().take_while(|&c| *c == ' ').count();
                 let r_blanks = right.iter().take_while(|&c| *c == ' ').count();
                 let mut rowsmush = l_blanks + r_blanks;
-                if let Some(&lch) = left.iter().rev().skip_while(|&c| *c == ' ').next() {
-                    if let Some(&rch) = right.iter().skip_while(|&c| *c == ' ').next() {
+                if let Some(&lch) = left.iter().rev().find(|&c| *c == ' ') {
+                    if let Some(&rch) = right.iter().find(|&c| *c == ' ') {
                         if let Some(_ch) = smushem(lch, rch, settings) {
                             rowsmush += 1
                         }
@@ -169,7 +169,7 @@ impl Text {
         let mut text = left.text.clone();
         text.push_str(right.text.as_str());
 
-        for i in 0..self.height() {
+        for (i, item) in result.iter_mut().enumerate().take(self.height()) {
             for k in 0..smushamount {
                 let column = if smushamount > self.width() {
                     0
@@ -178,24 +178,21 @@ impl Text {
                 };
                 let rch = right.art[i][k];
 
-                if column >= result[i].len() {
+                if column >= item.len() {
                     if rch != ' ' {
-                        result[i].push(rch);
+                        item.push(rch);
                     }
                     continue;
                 }
-                let lch = result[i][column];
+                let lch = item[column];
 
                 if let Some(smushed) = smushem(lch, rch, settings) {
-                    result[i][column] = smushed;
+                    item[column] = smushed;
                 }
             }
-            result[i].extend_from_slice(&right.art[i][smushamount..]);
+            item.extend_from_slice(&right.art[i][smushamount..]);
         }
-        Text {
-            art: result,
-            text,
-        }
+        Text { art: result, text }
     }
 
     pub fn width(&self) -> usize {
