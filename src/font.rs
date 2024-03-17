@@ -74,7 +74,7 @@ fn settingsline(input: &str) -> IResult<&str, Settings> {
     ))(input)?;
 
     let smushmode = if let Some(sm) = smush2 {
-        SmushMode::from_bits_truncate(sm)
+        SmushMode::from(sm)
     } else {
         SmushMode::from_old_layout(smush)
     };
@@ -297,6 +297,27 @@ fn parse_settings_broadway() {
                 commentlines: 29,
                 right2left: false,
                 smushmode: 130.into(),
+            }
+        ))
+    );
+}
+
+#[test]
+fn parse_settings_block() {
+    let settings = r#"flf2a$ 8 6 27 0 10 0 576 96"#;
+
+    assert_eq!(
+        settingsline(settings),
+        Ok((
+            "",
+            Settings {
+                hardblank: '$',
+                charheight: 8,
+                baseline: 6,
+                maxlength: 27,
+                commentlines: 10,
+                right2left: false,
+                smushmode: 576.into(),
             }
         ))
     );

@@ -1,6 +1,6 @@
 use crate::font::Font;
 use crate::settings::{Settings, SmushMode};
-use std::cmp::min;
+use std::cmp::{min, max};
 use std::fmt;
 
 type Art = Vec<Vec<char>>;
@@ -157,7 +157,7 @@ impl Text {
             })
             .min()
             .unwrap_or(0);
-        println!("rowsmush: {}, text: {}", answer, self.text);
+        //println!("rowsmush: {}, text: {}", answer, self.text);
         answer
     }
 
@@ -167,9 +167,6 @@ impl Text {
         let left;
         let right;
         if settings.right2left {
-            if self.width() == 0 {
-                return other.clone();
-            }
             left = other;
             right = self;
         } else {
@@ -183,8 +180,9 @@ impl Text {
 
         for (i, item) in result.iter_mut().enumerate().take(self.height()) {
             // println!("append {} <- {}   item: {:?}, smush: {}", self.text, other.text, item, smushamount);
+            let resultlen = item.len();
             for k in 0..smushamount {
-                let kcol = self.width() + k;
+                let kcol = resultlen + k;
                 let column = if kcol < smushamount {
                     kcol
                 } else {
