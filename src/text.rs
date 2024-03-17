@@ -1,5 +1,6 @@
 use crate::font::Font;
 use crate::settings::{Settings, SmushMode};
+use std::cmp::min;
 use std::fmt;
 
 type Art = Vec<Vec<char>>;
@@ -124,40 +125,53 @@ impl Text {
         if !s.intersects(SmushMode::SMUSH) && !s.intersects(SmushMode::KERN) {
             return 0;
         }
+        if settings.right2left {
+            if other.width() == 0 {
+                return 0;
+            }
+        } else {
+            if self.width() == 0 {
+                return 0;
+            }
+        }
 
         // For each row of the artwork...
-        (0..self.height())
-            .map(|i| {
-                let left;
-                let right;
-                if settings.right2left {
-                    left = &other.art[i];
-                    right = &self.art[i];
+        let answer = (0..self.height())
+            .map(|row| {
+                let (left, right, ch1, ch2) = if settings.right2left {
+                    (&other.art[row], &self.art[row], other.art[row].first(), self.art[row].last())
                 } else {
-                    left = &self.art[i];
-                    right = &other.art[i];
-                }
-                let l_blanks = left.iter().rev().take_while(|&c| *c == ' ').count();
-                let r_blanks = right.iter().take_while(|&c| *c == ' ').count();
+                    (&self.art[row], &other.art[row], self.art[row].last(), other.art[row].first())
+                };
+                let l_blanks = left.iter().rev().skip(1).take_while(|&c| *c == ' ').count();
+                let r_blanks = right.iter().skip(1).take_while(|&c| *c == ' ').count();
                 let mut rowsmush = l_blanks + r_blanks;
-                if let Some(&lch) = left.iter().rev().find(|&c| *c == ' ') {
-                    if let Some(&rch) = right.iter().find(|&c| *c == ' ') {
-                        if let Some(_ch) = smushem(lch, rch, settings) {
+                match (ch1, ch2) {
+                    (None, _) | (Some(' '), _) => rowsmush += 1,
+                    (Some(&c1), Some(&c2)) => {
+                        if let Some(_) = smushem(c1, c2, settings) {
                             rowsmush += 1
                         }
                     }
+                    _ => ()
                 }
                 rowsmush
             })
             .min()
-            .unwrap_or(0)
+            .unwrap_or(0);
+        // println!("rowsmuch: {}, text: {}", answer, self.text);
+        answer
     }
 
     pub fn append(&self, other: &Text, settings: &Settings) -> Text {
+        // println!("append {} <- {}", self.text, other.text);
         let smushamount = self.calculate_smush_amount(other, settings);
         let left;
         let right;
         if settings.right2left {
+            if self.width() == 0 {
+                return other.clone();
+            }
             left = other;
             right = self;
         } else {
@@ -171,11 +185,7 @@ impl Text {
 
         for (i, item) in result.iter_mut().enumerate().take(self.height()) {
             for k in 0..smushamount {
-                let column = if smushamount > self.width() {
-                    0
-                } else {
-                    self.width() - smushamount + k
-                };
+                let column = self.width() + k - smushamount;
                 let rch = right.art[i][k];
 
                 if column >= item.len() {
@@ -190,7 +200,8 @@ impl Text {
                     item[column] = smushed;
                 }
             }
-            item.extend_from_slice(&right.art[i][smushamount..]);
+            let x = min(right.width(), smushamount);
+            item.extend_from_slice(&right.art[i][x..])
         }
         Text { art: result, text }
     }

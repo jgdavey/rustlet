@@ -2,7 +2,7 @@ use nom::{
     branch::alt,
     bytes::complete::{tag, take_while},
     character::complete::{anychar, digit1, line_ending, space0},
-    combinator::{all_consuming, map, map_opt, map_res, opt, recognize},
+    combinator::{map, map_opt, map_res, opt, recognize},
     multi::{many0, many_m_n},
     sequence::{delimited, pair, terminated, tuple},
     IResult,
@@ -158,8 +158,10 @@ fn parse_font(input: &str) -> IResult<&str, Font> {
         };
         characters.insert(c, character);
     }
+
+    //println!("CHARACTERS: {:?}", characters);
     // what's left is additional characters
-    let (input, additional_characters) = all_consuming(many0(parse_additional_character))(input)?;
+    let (input, additional_characters) = many0(parse_additional_character)(input)?;
 
     //println!("Additional characters: {:#?}", additional_characters);
 
