@@ -31,13 +31,21 @@ pub fn print_diff(cs: &Changeset) -> std::io::Result<()> {
                 }
             }
             Difference::Add(ref x) => {
-                for line in x.lines() {
-                    println!("{}{}", green_fg.paint("+"), green_fg.paint(line));
+                if x.contains('\n') {
+                    for line in x.lines() {
+                        println!("{}{}", green_fg.paint("+"), green_fg.paint(line));
+                    }
+                } else {
+                    println!("{}{}", green_fg.paint("+"), green_fg.paint(x));
                 }
             }
             Difference::Rem(ref x) => {
-                for line in x.lines() {
-                    println!("{}{}", red_fg.paint("-"), red_fg.paint(line));
+                if x.contains('\n') {
+                    for line in x.lines() {
+                        println!("{}{}", red_fg.paint("-"), red_fg.paint(line));
+                    }
+                } else {
+                    println!("{}{}", red_fg.paint("-"), red_fg.paint(x));
                 }
             }
         }

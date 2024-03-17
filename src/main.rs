@@ -41,7 +41,7 @@ fn main() {
 
     let matches = app.get_matches();
 
-    let rawfont = include_str!("../fonts/small.flf");
+    let rawfont = include_str!("../fonts/standard.flf");
 
     let fontcontents = matches
         .value_of("font")
@@ -65,7 +65,6 @@ fn main() {
     let art_lines = art_lines(&message, &font, &font.settings, max_size);
 
     for art_line in art_lines {
-        let block = art_line.to_string().replace(font.hardblank(), " ");
-        print!("{}", block);
+        print!("{}", art_line);
     }
 }

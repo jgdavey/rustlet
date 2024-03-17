@@ -1,6 +1,6 @@
 use crate::font::Font;
 use crate::settings::{Settings, SmushMode};
-use std::cmp::{max, min};
+use std::cmp::min;
 use std::fmt;
 
 type Art = Vec<Vec<char>>;
@@ -139,7 +139,7 @@ impl Text {
                 };
                 let l_blanks = left.iter().rev().take_while(|&c| *c == ' ').count();
                 let r_blanks = right.iter().take_while(|&c| *c == ' ').count();
-                let mut rowsmush = max(l_blanks, r_blanks);
+                let mut rowsmush = l_blanks + r_blanks;
                 let ch1 = left.iter().rev().nth(l_blanks);
                 let ch2 = right.get(r_blanks);
                 match (ch1, ch2) {
@@ -222,6 +222,20 @@ impl Text {
             art,
         }
     }
+
+    pub fn justify(&mut self, _width: usize) {
+        let front_spaces = self
+            .art
+            .iter()
+            .map(|line| line.iter().take_while(|&&c| c == ' ').count())
+            .min()
+            .unwrap_or(0);
+        if front_spaces > 0 {
+            for line in self.art.iter_mut() {
+                line.remove(0);
+            }
+        }
+    }
 }
 
 impl fmt::Display for Text {
@@ -282,6 +296,10 @@ pub fn art_lines(message: &str, font: &Font, settings: &Settings, max_width: usi
 
     if !line.is_empty() {
         result.push(line);
+    }
+
+    for text in result.iter_mut() {
+        text.justify(max_width);
     }
 
     result
