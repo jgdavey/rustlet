@@ -155,13 +155,12 @@ impl Text {
             })
             .min()
             .unwrap_or(0);
-        //println!("rowsmush: {}, text: {}", answer, self.text);
         answer
     }
 
     pub fn append(&self, other: &Text, settings: &Settings) -> Text {
-        // println!("append {} <- {}", self.text, other.text);
         let smushamount = self.calculate_smush_amount(other, settings);
+        // println!("append {} <- {} smush: {}", self.text, other.text, smushamount);
         let left;
         let right;
         if settings.right2left {
@@ -177,7 +176,6 @@ impl Text {
         text.push_str(right.text.as_str());
 
         for (i, item) in result.iter_mut().enumerate().take(self.height()) {
-            // println!("append {} <- {}   item: {:?}, smush: {}", self.text, other.text, item, smushamount);
             let resultlen = item.len();
             for k in 0..smushamount {
                 let kcol = resultlen + k;
