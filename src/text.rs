@@ -248,60 +248,90 @@ impl fmt::Display for Text {
     }
 }
 
+pub struct ArtOutput<'a> {
+    input: &'a str,
+    font: &'a Font,
+    settings: &'a Settings,
+    max_width: usize,
+}
+
+impl<'a> ArtOutput<'a> {
+    pub fn build(
+        message: &'a str,
+        font: &'a Font,
+        settings: &'a Settings,
+        max_width: usize,
+    ) -> Self {
+        ArtOutput {
+            input: message,
+            font,
+            settings,
+            max_width,
+        }
+    }
+
+    pub fn lines(&self) -> Vec<String> {
+        let space = self.font.get_character(&' ');
+        let words: Vec<Text> = self
+            .input
+            .split_whitespace()
+            .flat_map(|word| {
+                let mut result = vec![];
+                let mut line = Text::empty_of_height(self.font.height());
+                for ch in word.chars().map(|c| self.font.get_character(&c)) {
+                    let new_line = line.append(ch, self.settings);
+                    if !line.is_empty() && new_line.width() > self.max_width {
+                        result.push(line);
+                        line = Text::empty_of_height(self.font.height()).append(ch, self.settings);
+                    } else {
+                        line = new_line
+                    }
+                }
+                if !line.is_empty() {
+                    result.push(line);
+                }
+                result.into_iter()
+            })
+            .collect();
+
+        let mut result = vec![];
+        let mut line = Text::empty_of_height(self.font.height());
+
+        for word in words {
+            if line.is_empty() {
+                line = line.append(&word, self.settings);
+            } else {
+                let new_line = line
+                    .append(space, self.settings)
+                    .append(&word, self.settings);
+                if new_line.width() > self.max_width {
+                    result.push(line);
+                    line = Text::empty_of_height(self.font.height()).append(&word, self.settings);
+                } else {
+                    line = new_line;
+                }
+            }
+        }
+
+        if !line.is_empty() {
+            result.push(line);
+        }
+
+        for text in result.iter_mut() {
+            text.justify(self.max_width);
+        }
+
+        result
+            .iter()
+            .map(|art_line| art_line.to_string().replace(self.font.hardblank(), " "))
+            .collect()
+    }
+}
+
 /// Given a message, font, settings, and maximum width, formats the
 /// message using the font. Returns "art lines", that is, a
 /// Vec<String> that, when printed sequentially, will resemble "lines"
 /// of text. Each String can be multiple lines.
 pub fn art_lines(message: &str, font: &Font, settings: &Settings, max_width: usize) -> Vec<String> {
-    let space = font.get_character(&' ');
-    let words: Vec<Text> = message
-        .split_whitespace()
-        .flat_map(|word| {
-            let mut result = vec![];
-            let mut line = Text::empty_of_height(font.height());
-            for ch in word.chars().map(|c| font.get_character(&c)) {
-                let new_line = line.append(ch, settings);
-                if !line.is_empty() && new_line.width() > max_width {
-                    result.push(line);
-                    line = Text::empty_of_height(font.height()).append(ch, settings);
-                } else {
-                    line = new_line
-                }
-            }
-            if !line.is_empty() {
-                result.push(line);
-            }
-            result.into_iter()
-        })
-        .collect();
-
-    let mut result = vec![];
-    let mut line = Text::empty_of_height(font.height());
-
-    for word in words {
-        if line.is_empty() {
-            line = line.append(&word, settings);
-        } else {
-            let new_line = line.append(space, settings).append(&word, settings);
-            if new_line.width() > max_width {
-                result.push(line);
-                line = Text::empty_of_height(font.height()).append(&word, settings);
-            } else {
-                line = new_line;
-            }
-        }
-    }
-
-    if !line.is_empty() {
-        result.push(line);
-    }
-
-    for text in result.iter_mut() {
-        text.justify(max_width);
-    }
-
-    result
-        .iter()
-        .map(|art_line| art_line.to_string().replace(font.hardblank(), " "))
-        .collect()
+    ArtOutput::build(message, font, settings, max_width).lines()
 }
