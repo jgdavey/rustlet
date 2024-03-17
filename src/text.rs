@@ -81,17 +81,15 @@ fn smushem(lch: char, rch: char, settings: &Settings) -> Option<char> {
 
     if settings.smushmode.intersects(SmushMode::HIERARCHY) {
         let hierarchy = ["|", "/\\", "[]", "{}", "()", "<>"]; // low -> high precedence
-        let is_in_hierarchy = |low: char, high: char, i| {
-            let first: &str = hierarchy[i];
-            first.contains(low) && hierarchy[i + 1..].join("").contains(high)
-        };
 
         for i in 0..hierarchy.len() {
-            if is_in_hierarchy(lch, rch, i) {
-                return Some(rch);
+            let c = hierarchy[i];
+            let rest =  hierarchy[i + 1..].join("");
+            if c.contains(lch) && rest.contains(rch) {
+                return Some(rch)
             }
-            if is_in_hierarchy(rch, lch, i) {
-                return Some(lch);
+            if c.contains(rch) && rest.contains(lch) {
+                return Some(lch)
             }
         }
     }
