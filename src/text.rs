@@ -61,7 +61,8 @@ fn smushem(lch: char, rch: char, settings: &Settings) -> Option<char> {
         if lch == settings.hardblank && rch == settings.hardblank {
             return Some(settings.hardblank);
         }
-    } else if lch == settings.hardblank || rch == settings.hardblank {
+    }
+    if lch == settings.hardblank || rch == settings.hardblank {
         return None;
     }
 
@@ -125,41 +126,38 @@ impl Text {
         if !s.intersects(SmushMode::SMUSH) && !s.intersects(SmushMode::KERN) {
             return 0;
         }
-        if settings.right2left {
-            if other.width() == 0 {
-                return 0;
-            }
-        } else {
-            if self.width() == 0 {
-                return 0;
-            }
-        }
+
+        let other_len = other.width();
 
         // For each row of the artwork...
         let answer = (0..self.height())
             .map(|row| {
-                let (left, right, ch1, ch2) = if settings.right2left {
-                    (&other.art[row], &self.art[row], other.art[row].first(), self.art[row].last())
+                let (left, right) = if settings.right2left {
+                    (&other.art[row], &self.art[row])
                 } else {
-                    (&self.art[row], &other.art[row], self.art[row].last(), other.art[row].first())
+                    (&self.art[row], &other.art[row])
                 };
-                let l_blanks = left.iter().rev().skip(1).take_while(|&c| *c == ' ').count();
-                let r_blanks = right.iter().skip(1).take_while(|&c| *c == ' ').count();
-                let mut rowsmush = l_blanks + r_blanks;
+                let l_blanks = left.iter().rev().take_while(|&c| *c == ' ').count();
+                let r_blanks = right.iter().take_while(|&c| *c == ' ').count();
+                let mut rowsmush = max(l_blanks, r_blanks);
+                let ch1 = left.iter().rev().skip(l_blanks).next();
+                let ch2 = right.iter().skip(r_blanks).next();
                 match (ch1, ch2) {
                     (None, _) | (Some(' '), _) => rowsmush += 1,
                     (Some(&c1), Some(&c2)) => {
-                        if let Some(_) = smushem(c1, c2, settings) {
-                            rowsmush += 1
+                        if right.len() > rowsmush {
+                            if let Some(_) = smushem(c1, c2, settings) {
+                                rowsmush += 1
+                            }
                         }
                     }
                     _ => ()
                 }
-                rowsmush
+                min(rowsmush, other_len)
             })
             .min()
             .unwrap_or(0);
-        // println!("rowsmuch: {}, text: {}", answer, self.text);
+        println!("rowsmush: {}, text: {}", answer, self.text);
         answer
     }
 
@@ -184,14 +182,18 @@ impl Text {
         text.push_str(right.text.as_str());
 
         for (i, item) in result.iter_mut().enumerate().take(self.height()) {
+            // println!("append {} <- {}   item: {:?}, smush: {}", self.text, other.text, item, smushamount);
             for k in 0..smushamount {
-                let column = self.width() + k - smushamount;
+                let kcol = self.width() + k;
+                let column = if kcol < smushamount {
+                    kcol
+                } else {
+                    kcol - smushamount
+                };
                 let rch = right.art[i][k];
 
                 if column >= item.len() {
-                    if rch != ' ' {
-                        item.push(rch);
-                    }
+                    item.push(rch);
                     continue;
                 }
                 let lch = item[column];
@@ -200,8 +202,7 @@ impl Text {
                     item[column] = smushed;
                 }
             }
-            let x = min(right.width(), smushamount);
-            item.extend_from_slice(&right.art[i][x..])
+            item.extend_from_slice(&right.art[i][smushamount..])
         }
         Text { art: result, text }
     }
