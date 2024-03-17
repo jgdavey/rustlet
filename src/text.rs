@@ -1,6 +1,6 @@
 use crate::font::Font;
 use crate::settings::{Settings, SmushMode};
-use std::cmp::{min, max};
+use std::cmp::{max, min};
 use std::fmt;
 
 type Art = Vec<Vec<char>>;
@@ -57,11 +57,13 @@ fn smushem(lch: char, rch: char, settings: &Settings) -> Option<char> {
         return Some(rch);
     }
 
-    if settings.smushmode.intersects(SmushMode::HARDBLANK) {
-        if lch == settings.hardblank && rch == settings.hardblank {
-            return Some(settings.hardblank);
-        }
+    if settings.smushmode.intersects(SmushMode::HARDBLANK)
+        && lch == settings.hardblank
+        && rch == settings.hardblank
+    {
+        return Some(settings.hardblank);
     }
+
     if lch == settings.hardblank || rch == settings.hardblank {
         return None;
     }
@@ -84,12 +86,12 @@ fn smushem(lch: char, rch: char, settings: &Settings) -> Option<char> {
 
         for i in 0..hierarchy.len() {
             let c = hierarchy[i];
-            let rest =  hierarchy[i + 1..].join("");
+            let rest = hierarchy[i + 1..].join("");
             if c.contains(lch) && rest.contains(rch) {
-                return Some(rch)
+                return Some(rch);
             }
             if c.contains(rch) && rest.contains(lch) {
-                return Some(lch)
+                return Some(lch);
             }
         }
     }
@@ -138,18 +140,16 @@ impl Text {
                 let l_blanks = left.iter().rev().take_while(|&c| *c == ' ').count();
                 let r_blanks = right.iter().take_while(|&c| *c == ' ').count();
                 let mut rowsmush = max(l_blanks, r_blanks);
-                let ch1 = left.iter().rev().skip(l_blanks).next();
-                let ch2 = right.iter().skip(r_blanks).next();
+                let ch1 = left.iter().rev().nth(l_blanks);
+                let ch2 = right.get(r_blanks);
                 match (ch1, ch2) {
                     (None, _) | (Some(' '), _) => rowsmush += 1,
                     (Some(&c1), Some(&c2)) => {
-                        if right.len() > rowsmush {
-                            if let Some(_) = smushem(c1, c2, settings) {
-                                rowsmush += 1
-                            }
+                        if right.len() > rowsmush && smushem(c1, c2, settings).is_some() {
+                            rowsmush += 1
                         }
                     }
-                    _ => ()
+                    _ => (),
                 }
                 min(rowsmush, other_len)
             })
