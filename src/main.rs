@@ -34,14 +34,16 @@ struct Cli {
 }
 
 fn find_font_dir() -> Option<PathBuf> {
-    for dir in ["/usr/share/figlet/fonts",
+    for dir in [
+        "/usr/share/figlet/fonts",
         "/usr/local/share/figlet/fonts",
-        "/opt/homebrew/share/figlet/fonts"] {
-            let d = PathBuf::from(dir);
-            if d.is_dir() {
-                return Some(d.to_path_buf());
-            }
+        "/opt/homebrew/share/figlet/fonts",
+    ] {
+        let d = PathBuf::from(dir);
+        if d.is_dir() {
+            return Some(d.to_path_buf());
         }
+    }
     None
 }
 

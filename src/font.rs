@@ -129,18 +129,23 @@ fn trim_line(line: &str) -> VecDeque<char> {
     }
 }
 
+fn parse_character(input: &str, height: usize) -> IResult<&str, Vec<VecDeque<char>>> {
+    map(many_m_n(height, height, line), |ch| {
+        ch.into_iter().map(trim_line).collect::<Vec<_>>()
+    })(input)
+}
+
 fn parse_font(input: &str) -> IResult<&str, Font> {
     let (input, settings) = terminated(settingsline, line_ending)(input)?;
     let comlines = settings.commentlines as usize;
     let height = settings.charheight as usize;
     let (input, comment) =
         map(many_m_n(comlines, comlines, line), |lines| lines.join("\n"))(input)?;
-    let parse_character = map(many_m_n(height, height, line), |ch| {
-        ch.into_iter().map(trim_line).collect::<Vec<_>>()
-    });
-    let parse_additional_character = tuple((parse_code_tag, &parse_character));
+    let parse_additional_character =
+        tuple((parse_code_tag, |input| parse_character(input, height)));
 
-    let (input, required_characters) = many_m_n(102, 102, &parse_character)(input)?;
+    let (input, required_characters) =
+        many_m_n(102, 102, |input| parse_character(input, height))(input)?;
 
     let mut characters = HashMap::new();
 
