@@ -13,6 +13,13 @@ use std::str::FromStr;
 use crate::settings::{Settings, SmushMode};
 use crate::text::Text;
 
+use encoding_rs::UTF_8;
+use encoding_rs_io::DecodeReaderBytesBuilder;
+
+use std::fs::File;
+use std::io::{self, Error, ErrorKind, Read};
+use std::path::Path;
+
 #[derive(Debug, PartialEq)]
 pub struct Font {
     pub settings: Settings,
@@ -189,6 +196,18 @@ pub fn read_font(font_data: &str) -> Option<Font> {
     } else {
         None
     }
+}
+
+pub fn read_font_file<P: AsRef<Path>>(path: P) -> io::Result<Font> {
+    let disp = format!("{}", path.as_ref().display());
+    let file = File::open(path)?;
+    let mut transcoded = DecodeReaderBytesBuilder::new()
+        .encoding(Some(UTF_8))
+        .build(file);
+    let mut out = String::new();
+    transcoded.read_to_string(&mut out)?;
+    read_font(&out)
+        .ok_or_else(|| Error::new(ErrorKind::Other, format!("Problem with path: {}", disp)))
 }
 
 #[test]

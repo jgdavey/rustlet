@@ -4,14 +4,12 @@ extern crate nom;
 #[macro_use]
 extern crate clap;
 
-use std::fs;
-
 mod font;
 mod settings;
 mod text;
 
 use clap::{App, Arg};
-use font::read_font;
+use font::{read_font, read_font_file};
 //use settings::Settings;
 use text::art_lines;
 
@@ -43,12 +41,10 @@ fn main() {
 
     let rawfont = include_str!("../fonts/standard.flf");
 
-    let fontcontents = matches
+    let font = matches
         .value_of("font")
-        .and_then(|f| fs::read_to_string(f).ok())
-        .unwrap_or_else(|| rawfont.to_string());
-
-    let font = read_font(&fontcontents).unwrap();
+        .and_then(|f| read_font_file(f).ok())
+        .unwrap_or_else(|| read_font(rawfont).expect("Default font unreadable"));
 
     let max_size: usize = matches
         .value_of("width")
