@@ -41,7 +41,7 @@ fn find_font_dir() -> Option<PathBuf> {
     ] {
         let d = PathBuf::from(dir);
         if d.is_dir() {
-            return Some(d.to_path_buf());
+            return Some(d);
         }
     }
     None
@@ -52,7 +52,7 @@ fn read_font_from(dir: &Path, font: &str) -> Option<Font> {
         let mut base = PathBuf::from(font);
         base.set_extension(ext);
         let path = dir.join(base);
-        println!("path: {}", path.to_string_lossy());
+        // println!("path: {}", path.to_string_lossy());
         if let Ok(f) = read_font_file(&path) {
             return Some(f);
         }
