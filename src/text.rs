@@ -1,9 +1,10 @@
 use crate::font::Font;
 use crate::settings::{Settings, SmushMode};
 use std::cmp::min;
+use std::collections::VecDeque;
 use std::fmt;
 
-type Art = Vec<Vec<char>>;
+type Art = Vec<VecDeque<char>>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Text {
@@ -187,7 +188,7 @@ impl Text {
                 let rch = right.art[i][k];
 
                 if column >= item.len() {
-                    item.push(rch);
+                    item.push_back(rch);
                     continue;
                 }
                 let lch = item[column];
@@ -196,7 +197,7 @@ impl Text {
                     item[column] = smushed;
                 }
             }
-            item.extend_from_slice(&right.art[i][smushamount..])
+            item.extend(right.art[i].iter().skip(smushamount))
         }
         Text { art: result, text }
     }
@@ -214,23 +215,34 @@ impl Text {
     }
 
     pub fn empty_of_height(height: u32) -> Self {
-        let art: Art = (0..height).map(|_| vec![]).collect();
+        let art: Art = (0..height).map(|_| VecDeque::new()).collect();
         Text {
             text: String::from(""),
             art,
         }
     }
 
-    pub fn justify(&mut self, _width: usize) {
-        let front_spaces = self
-            .art
-            .iter()
-            .map(|line| line.iter().take_while(|&&c| c == ' ').count())
-            .min()
-            .unwrap_or(0);
-        if front_spaces > 0 {
-            for line in self.art.iter_mut() {
-                line.remove(0);
+    pub fn justify(&mut self, settings: &Settings, width: usize) {
+        if settings.right2left {
+            if self.width() < width {
+                let pad = width - self.width() - 1;
+                for line in self.art.iter_mut() {
+                    for _ in 0..pad {
+                        line.push_front(' ');
+                    }
+                }
+            }
+        } else {
+            let front_spaces = self
+                .art
+                .iter()
+                .map(|line| line.iter().take_while(|&&c| c == ' ').count())
+                .min()
+                .unwrap_or(0);
+            if front_spaces > 0 {
+                for line in self.art.iter_mut() {
+                    line.remove(0);
+                }
             }
         }
     }
@@ -318,7 +330,7 @@ impl<'a> ArtOutput<'a> {
         }
 
         for text in result.iter_mut() {
-            text.justify(self.max_width);
+            text.justify(self.settings, self.max_width);
         }
 
         result

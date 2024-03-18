@@ -7,7 +7,7 @@ use nom::{
     sequence::{delimited, pair, terminated, tuple},
     IResult,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::str::FromStr;
 
 use crate::settings::{Settings, SmushMode};
@@ -109,14 +109,14 @@ fn line(input: &str) -> IResult<&str, &str> {
     terminated(take_while(non_line_ending), line_ending)(input)
 }
 
-fn trim_line(line: &str) -> Vec<char> {
+fn trim_line(line: &str) -> VecDeque<char> {
     if line.len() < 2 {
-        vec![]
+        VecDeque::new()
     } else {
-        let mut chars: Vec<_> = line.chars().collect();
-        let tailchar = chars.pop();
-        while chars.last() == tailchar.as_ref() {
-            chars.pop();
+        let mut chars: VecDeque<_> = line.chars().collect();
+        let tailchar = chars.pop_back();
+        while chars.back() == tailchar.as_ref() {
+            chars.pop_back();
         }
         chars
     }
