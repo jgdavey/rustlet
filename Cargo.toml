@@ -9,9 +9,9 @@ license = "MIT/Apache-2.0"
 [dependencies]
 nom = "5"
 bitflags = "2"
-clap = "2"
 encoding_rs = "0.8"
 encoding_rs_io = "0.1"
+clap = { version = "4.5", features = ["derive"] }
 
 [dev-dependencies]
 difference = "2.0.0"

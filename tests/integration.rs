@@ -4,8 +4,8 @@ extern crate rustlet;
 
 mod diff;
 
-use rustlet::font::read_font_file;
 use rustlet::art_lines;
+use rustlet::font::read_font_file;
 
 use std::fmt::Write;
 
