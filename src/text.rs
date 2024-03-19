@@ -34,15 +34,12 @@ fn smushem(lch: char, rch: char, settings: &Settings) -> Option<char> {
         return Some(lch);
     }
 
-    if !settings.smushmode.intersects(SmushMode::SMUSH) {
+    if !settings.is_smush() {
         return None;
     }
 
     // Nothing set below 64: this is smushing by universal overlapping
-    if !settings
-        .smushmode
-        .intersects(SmushMode::from_bits_truncate(63))
-    {
+    if settings.is_universal_overlap() {
         // ensure overlapping preference to visible chars (spaces handled already)
         if lch == settings.hardblank {
             return Some(rch);
@@ -156,7 +153,11 @@ impl Text {
             })
             .min()
             .unwrap_or(0);
-        answer
+        if self.is_empty() && answer > 0 {
+            answer - 1
+        } else {
+            answer
+        }
     }
 
     pub fn append(&self, other: &Text, settings: &Settings) -> Text {
@@ -181,7 +182,7 @@ impl Text {
             for k in 0..smushamount {
                 let kcol = resultlen + k;
                 let column = if kcol < smushamount {
-                    kcol
+                    0
                 } else {
                     kcol - smushamount
                 };
@@ -232,7 +233,7 @@ impl Text {
                     }
                 }
             }
-        } else {
+        } else if settings.can_trim_line() {
             let front_spaces = self
                 .art
                 .iter()

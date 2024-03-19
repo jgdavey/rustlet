@@ -59,3 +59,17 @@ pub struct Settings {
     pub right2left: bool,
     pub smushmode: SmushMode,
 }
+
+impl Settings {
+    pub fn is_smush(&self) -> bool {
+        self.smushmode.intersects(SmushMode::SMUSH)
+    }
+
+    pub fn can_trim_line(&self) -> bool {
+        self.smushmode != SmushMode::empty()
+    }
+
+    pub fn is_universal_overlap(&self) -> bool {
+        !self.smushmode.intersects(SmushMode::from_bits_truncate(63))
+    }
+}
